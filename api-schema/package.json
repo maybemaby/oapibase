@@ -9,7 +9,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "zoapi": "^0.2.0",
+    "zoapi": "^0.3.0",
     "zod": "^3.24.2"
   }
 }

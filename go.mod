@@ -9,7 +9,6 @@ require (
 	github.com/maybemaby/smolauth v0.3.2
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pressly/goose/v3 v3.24.1
-	github.com/stretchr/testify v1.10.0
 )
 
 require (
@@ -17,15 +16,11 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.30.0 // indirect
-	github.com/PuerkitoBio/goquery v1.10.0 // indirect
 	github.com/alexedwards/scs/pgxstore v0.0.0-20240316134038-7e11d57e8885 // indirect
 	github.com/alexedwards/scs/sqlite3store v0.0.0-20240316134038-7e11d57e8885 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
-	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/elastic/go-sysinfo v1.11.2 // indirect
@@ -43,22 +38,16 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/jonboulle/clockwork v0.4.0 // indirect
-	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/mfridman/xflag v0.1.0 // indirect
 	github.com/microsoft/go-mssqldb v1.8.0 // indirect
-	github.com/mmcdole/gofeed v1.3.0 // indirect
-	github.com/mmcdole/goxpp v1.1.1 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
