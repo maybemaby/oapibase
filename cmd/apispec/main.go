@@ -1,7 +1,7 @@
 package main
 
 import (
-	api "github.com/maybemaby/oapibase/apiv2"
+	api "github.com/maybemaby/oapibase/api"
 )
 
 func main() {

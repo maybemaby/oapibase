@@ -225,6 +225,8 @@ github.com/oapi-codegen/runtime v1.1.1 h1:EXLHh0DXIJnWhdRPN2w4MXAzFyE4CskzhNLUmt
 github.com/oapi-codegen/runtime v1.1.1/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
 github.com/oaswrap/spec v0.1.5 h1:+2a64iBpCWaTTQZPZgJTahu+mOnY+ieORlqpBif6Dks=
 github.com/oaswrap/spec v0.1.5/go.mod h1:uG6ygUGp2ov0RuOYpsePflWFwhPs1Ren482n2u9wDhc=
+github.com/oaswrap/spec v0.3.1 h1:k3Zf42bSX8ria41XbNQMOa52RHLFU1HEn5EHA4Mqthc=
+github.com/oaswrap/spec v0.3.1/go.mod h1:AkqQJZtJCBjhqtDhrIM88pq5q0NVCkscurIEnw+cyFY=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.10.2/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=

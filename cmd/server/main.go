@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	api "github.com/maybemaby/oapibase/apiv2"
+	"github.com/maybemaby/oapibase/api"
 )
 
 type Args struct {

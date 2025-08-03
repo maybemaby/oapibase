@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/maybemaby/oapibase/apiv2/utils"
+	"github.com/maybemaby/oapibase/api/utils"
 	"github.com/maybemaby/smolauth"
 	"github.com/oapi-codegen/runtime/types"
 )

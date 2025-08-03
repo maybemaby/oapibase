@@ -14,7 +14,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/maybemaby/oapibase/apiv2/utils"
+	"github.com/maybemaby/oapibase/api/utils"
 	"github.com/maybemaby/oapibase/frontend"
 	"github.com/maybemaby/smolauth"
 )
@@ -82,19 +82,7 @@ func (s *Server) MountRoutes() {
 	mux := http.NewServeMux()
 
 	if !s.prod {
-		mux.HandleFunc("GET /docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-			swagger, err := GenSpec()
-
-			if err != nil {
-				s.logger.Error("Failed to generate Swagger spec", slog.Any("err", err))
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write(swagger)
-		})
+		mux.HandleFunc("GET /docs/swagger.json", HandleSpec)
 		mux.HandleFunc("GET /docs/swagger", func(w http.ResponseWriter, r *http.Request) {
 			utils.RenderSwaggerUI(w, "/docs/swagger.json")
 		})
