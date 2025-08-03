@@ -1,6 +1,9 @@
-package gen
+package utils
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 const html = `
 <!DOCTYPE html>
@@ -18,7 +21,7 @@ const html = `
 <script>
   window.onload = () => {
     window.ui = SwaggerUIBundle({
-      url: '/docs/swagger.json',
+      url: '%s',
       dom_id: '#swagger-ui',
     });
   };
@@ -27,31 +30,10 @@ const html = `
 </html>
 `
 
-func RenderSwaggerUI(w http.ResponseWriter) {
+// RenderSwaggerUI writes the Swagger UI html to the response writer
+// swaggerPath should point to an endpoint with a valid swagger configuration
+func RenderSwaggerUI(w http.ResponseWriter, swaggerPath string) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(html))
+	fmt.Fprintf(w, html, swaggerPath)
 }
 
-func HandleSwaggerUI(w http.ResponseWriter, r *http.Request) {
-	RenderSwaggerUI(w)
-}
-
-func HandleSwaggerJson(w http.ResponseWriter, r *http.Request) {
-	swagger, err := GetSwagger()
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	spec, err := swagger.MarshalJSON()
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(spec)
-}

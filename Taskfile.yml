@@ -35,4 +35,4 @@ tasks:
     cmd: ./scripts/migrate-add.sh
 
   generate:
-    cmd: bun ./api-schema/index.ts && go tool oapi-codegen --config=gen.yaml ./api.json
+    cmd: go run cmd/apispec/main.go

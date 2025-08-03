@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: oapibase
+  version: 0.1.0
+paths:
+  /auth/login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Apiv2PassLoginBody'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: OK
+      tags:
+      - auth
+  /auth/me:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apiv2MeResponse'
+          description: OK
+        "401":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: Unauthorized
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Apiv2PassSignupBody'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: string
+          description: OK
+      tags:
+      - auth
+components:
+  schemas:
+    Apiv2MeResponse:
+      properties:
+        id:
+          type: integer
+      type: object
+    Apiv2PassLoginBody:
+      properties:
+        email:
+          example: email@site.com
+          type: string
+        password:
+          type: string
+      type: object
+    Apiv2PassSignupBody:
+      properties:
+        email:
+          example: email@site.com
+          type: string
+        password:
+          minLength: 8
+          type: string
+        password2:
+          type: string
+      type: object

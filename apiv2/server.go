@@ -14,12 +14,10 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/maybemaby/oapibase/api/gen"
+	"github.com/maybemaby/oapibase/apiv2/utils"
 	"github.com/maybemaby/oapibase/frontend"
 	"github.com/maybemaby/smolauth"
 )
-
-var _ gen.ServerInterface = (*Server)(nil)
 
 type Server struct {
 	logger      *slog.Logger
@@ -77,11 +75,29 @@ func NewServer(isProd bool) (*Server, error) {
 
 func (s *Server) MountRoutes() {
 
+	authHandler := &AuthHandler{
+		authManager: s.authManager,
+	}
+
 	mux := http.NewServeMux()
 
 	if !s.prod {
-		mux.HandleFunc("GET /docs/swagger.json", gen.HandleSwaggerJson)
-		mux.HandleFunc("GET /docs/swagger", gen.HandleSwaggerUI)
+		mux.HandleFunc("GET /docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
+			swagger, err := GenSpec()
+
+			if err != nil {
+				s.logger.Error("Failed to generate Swagger spec", slog.Any("err", err))
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(swagger)
+		})
+		mux.HandleFunc("GET /docs/swagger", func(w http.ResponseWriter, r *http.Request) {
+			utils.RenderSwaggerUI(w, "/docs/swagger.json")
+		})
 
 		s.logger.Info("Swagger UI available at /docs/swagger")
 	}
@@ -92,7 +108,11 @@ func (s *Server) MountRoutes() {
 		CorsOrigin: "http://localhost:3001",
 	}))
 
-	// authMw := rootMw.Append(smolauth.RequireAuthMiddleware(s.authManager))
+	authMw := rootMw.Append(smolauth.RequireAuthMiddleware(s.authManager))
+
+	mux.Handle("GET /auth/me/{$}", authMw.ThenFunc(authHandler.GetAuthMe))
+	mux.Handle("POST /auth/signup", rootMw.ThenFunc(authHandler.PostAuthSignup))
+	mux.Handle("POST /auth/login", rootMw.ThenFunc(authHandler.PostAuthLogin))
 
 	// Due to the way the generated code is structured, we need to handle OPTIONS requests explicitly
 	mux.Handle("OPTIONS /", rootMw.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -135,16 +155,9 @@ func (s *Server) MountRoutes() {
 		http.FileServer(http.FS(fs)).ServeHTTP(w, r)
 	}))
 
-	h := gen.HandlerWithOptions(s, gen.StdHTTPServerOptions{
-		BaseRouter: mux,
-		Middlewares: []gen.MiddlewareFunc{
-			rootMw.Then,
-		},
-	})
-
 	srv := &http.Server{
 		Addr:    ":" + s.port,
-		Handler: h,
+		Handler: mux,
 	}
 
 	s.srv = srv

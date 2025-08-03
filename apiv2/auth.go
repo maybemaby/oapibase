@@ -5,16 +5,24 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/maybemaby/oapibase/api/gen"
-	"github.com/maybemaby/oapibase/api/utils"
+	"github.com/maybemaby/oapibase/apiv2/utils"
 	"github.com/maybemaby/smolauth"
 	"github.com/oapi-codegen/runtime/types"
 )
 
-// PostAuthLogin implements gen.ServerInterface.
-func (s *Server) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
+type AuthHandler struct {
+	authManager *smolauth.AuthManager
+}
 
-	data := gen.PassLoginBody{}
+type PassLoginBody struct {
+	Email    string `json:"email" example:"email@site.com"`
+	Password string `json:"password"`
+}
+
+// PostAuthLogin implements gen.ServerInterface.
+func (h *AuthHandler) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
+
+	data := PassLoginBody{}
 
 	err := utils.ReadJSON(r, &data)
 
@@ -23,14 +31,14 @@ func (s *Server) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.authManager.CheckPassword(string(data.Email), data.Password)
+	id, err := h.authManager.CheckPassword(string(data.Email), data.Password)
 
 	if err != nil {
 		http.Error(w, "Invalid Password or Email", http.StatusUnauthorized)
 		return
 	}
 
-	err = s.authManager.Login(r, smolauth.SessionData{
+	err = h.authManager.Login(r, smolauth.SessionData{
 		UserId: id,
 	})
 
@@ -43,8 +51,8 @@ func (s *Server) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // PostAuthLogout implements gen.ServerInterface.
-func (s *Server) PostAuthLogout(w http.ResponseWriter, r *http.Request) {
-	err := s.authManager.Logout(r)
+func (h *AuthHandler) PostAuthLogout(w http.ResponseWriter, r *http.Request) {
+	err := h.authManager.Logout(r)
 
 	if err != nil {
 		http.Error(w, "Server error", http.StatusInternalServerError)
@@ -54,11 +62,17 @@ func (s *Server) PostAuthLogout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+type PassSignupBody struct {
+	Email     string `json:"email" example:"email@site.com"`
+	Password  string `json:"password" minLength:"8"`
+	Password2 string `json:"password2"`
+}
+
 // PostAuthSignup implements gen.ServerInterface.
-func (s *Server) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
 
 	logger := RequestLogger(r)
-	data := gen.PassSignupBody{}
+	data := PassSignupBody{}
 
 	err := utils.ReadJSON(r, &data)
 
@@ -83,7 +97,7 @@ func (s *Server) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.authManager.PasswordSignup(string(data.Email), data.Password)
+	id, err := h.authManager.PasswordSignup(string(data.Email), data.Password)
 
 	if err != nil {
 		logger.Error("Error signing up user", slog.String("err", err.Error()))
@@ -91,7 +105,7 @@ func (s *Server) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.authManager.Login(r, smolauth.SessionData{
+	err = h.authManager.Login(r, smolauth.SessionData{
 		UserId: id,
 	})
 
@@ -104,14 +118,18 @@ func (s *Server) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (s *Server) GetAuthMe(w http.ResponseWriter, r *http.Request) {
+type MeResponse struct {
+	Id int `json:"id"`
+}
 
-	mw := smolauth.RequireAuthMiddleware(s.authManager)
+func (h *AuthHandler) GetAuthMe(w http.ResponseWriter, r *http.Request) {
+
+	mw := smolauth.RequireAuthMiddleware(h.authManager)
 
 	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		res := &gen.MeResponse{}
-		sess, _ := s.authManager.GetSession(r)
+		res := MeResponse{}
+		sess, _ := h.authManager.GetSession(r)
 
 		res.Id = sess.UserId
 
