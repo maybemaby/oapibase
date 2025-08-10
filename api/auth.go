@@ -1,65 +1,27 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/maybemaby/oapibase/api/auth"
 	"github.com/maybemaby/oapibase/api/utils"
 	"github.com/maybemaby/smolauth"
-	"github.com/oapi-codegen/runtime/types"
 )
 
 type AuthHandler struct {
 	authManager *smolauth.AuthManager
+	jwtManager  *auth.JwtManager
+	pool        *pgxpool.Pool
 }
 
 type PassLoginBody struct {
 	Email    string `json:"email" example:"email@site.com"`
 	Password string `json:"password"`
-}
-
-// PostAuthLogin implements gen.ServerInterface.
-func (h *AuthHandler) PostAuthLogin(w http.ResponseWriter, r *http.Request) {
-
-	data := PassLoginBody{}
-
-	err := utils.ReadJSON(r, &data)
-
-	if err != nil {
-		http.Error(w, "Bad JSON body", http.StatusBadRequest)
-		return
-	}
-
-	id, err := h.authManager.CheckPassword(string(data.Email), data.Password)
-
-	if err != nil {
-		http.Error(w, "Invalid Password or Email", http.StatusUnauthorized)
-		return
-	}
-
-	err = h.authManager.Login(r, smolauth.SessionData{
-		UserId: id,
-	})
-
-	if err != nil {
-		http.Error(w, "Server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// PostAuthLogout implements gen.ServerInterface.
-func (h *AuthHandler) PostAuthLogout(w http.ResponseWriter, r *http.Request) {
-	err := h.authManager.Logout(r)
-
-	if err != nil {
-		http.Error(w, "Server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }
 
 type PassSignupBody struct {
@@ -68,27 +30,18 @@ type PassSignupBody struct {
 	Password2 string `json:"password2"`
 }
 
-// PostAuthSignup implements gen.ServerInterface.
-func (h *AuthHandler) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
+type LoginJwtResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
 
+func (h *AuthHandler) SignupJWT(w http.ResponseWriter, r *http.Request) {
+	var data PassSignupBody
 	logger := RequestLogger(r)
-	data := PassSignupBody{}
 
-	err := utils.ReadJSON(r, &data)
-
-	if err != nil {
-
-		if errors.Is(err, types.ErrValidationEmail) {
-			http.Error(w, "Invalid email format", http.StatusBadRequest)
-			return
-		}
-
-		http.Error(w, "Invalid body", http.StatusBadRequest)
-		return
-	}
-
-	if len(data.Password) < 8 {
-		http.Error(w, "Password must be at least 8 characters", http.StatusBadRequest)
+	// Decode the JSON request body into SignupData
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -97,25 +50,109 @@ func (h *AuthHandler) PostAuthSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.authManager.PasswordSignup(string(data.Email), data.Password)
+	user, err := auth.GetUserByEmail(r.Context(), data.Email, h.pool)
 
-	if err != nil {
-		logger.Error("Error signing up user", slog.String("err", err.Error()))
-		http.Error(w, "Server error", http.StatusInternalServerError)
+	if err != nil && err != pgx.ErrNoRows {
+		logger.Error("Error during signup", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	err = h.authManager.Login(r, smolauth.SessionData{
-		UserId: id,
-	})
-
-	if err != nil {
-		logger.Error("Error logging in user", slog.String("err", err.Error()))
-		http.Error(w, "Server error", http.StatusInternalServerError)
+	if user.ID != 0 {
+		// User already exists with this email
+		http.Error(w, "Invalid email or password", http.StatusBadRequest)
 		return
 	}
 
+	// Add any other signup validation logic here
+	newUser, err := auth.CreateUser(r.Context(), data.Email, data.Password, h.pool)
+
+	if err != nil {
+		slog.Error("Error during signup", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	sessData := auth.SessionData{
+		UserId: newUser.ID,
+		Role:   "user",
+	}
+
+	token, err := h.jwtManager.EncodeAccessToken(sessData)
+	refreshToken, refreshErr := h.jwtManager.EncodeRefreshToken(sessData)
+
+	if errors.Join(err, refreshErr) != nil {
+		logger.Error("Error encoding JWT tokens", slog.Any("err", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
+	response := LoginJwtResponse{
+		AccessToken:  token,
+		RefreshToken: refreshToken,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error("Error encoding response", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *AuthHandler) LoginJWT(w http.ResponseWriter, r *http.Request) {
+	var data PassLoginBody
+	logger := RequestLogger(r)
+
+	// Decode the JSON request body into LoginData
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := auth.GetUserByEmail(r.Context(), data.Email, h.pool)
+
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	err = auth.CheckPasswordHash(data.Password, *user.PasswordHash)
+
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	sessData := auth.SessionData{
+		UserId: user.ID,
+		Role:   user.Role,
+	}
+
+	tok, err := h.jwtManager.EncodeAccessToken(sessData)
+	refreshTok, refreshErr := h.jwtManager.EncodeRefreshToken(sessData)
+
+	if errors.Join(err, refreshErr) != nil {
+		logger.Error("Error encoding JWT tokens", slog.Any("err", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	response := LoginJwtResponse{
+		AccessToken:  tok,
+		RefreshToken: refreshTok,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		logger.Error("Error encoding response", slog.Any("err", err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 }
 
 type MeResponse struct {
@@ -124,22 +161,16 @@ type MeResponse struct {
 
 func (h *AuthHandler) GetAuthMe(w http.ResponseWriter, r *http.Request) {
 
-	mw := smolauth.RequireAuthMiddleware(h.authManager)
+	res := MeResponse{}
+	sess, _ := auth.RequestUser(r)
 
-	mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	res.Id = sess.UserId
 
-		res := MeResponse{}
-		sess, _ := h.authManager.GetSession(r)
+	err := utils.WriteJSON(w, r, res)
 
-		res.Id = sess.UserId
-
-		err := utils.WriteJSON(w, r, res)
-
-		if err != nil {
-			http.Error(w, "Server error", http.StatusInternalServerError)
-			return
-		}
-
-	})).ServeHTTP(w, r)
+	if err != nil {
+		http.Error(w, "Server error", http.StatusInternalServerError)
+		return
+	}
 
 }

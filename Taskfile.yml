@@ -26,10 +26,10 @@ tasks:
     cmd: docker run --name laserpg -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=laserpg -p 5432:5432 -d postgres
 
   migrate-up:
-    cmd: go tool goose -dir ./migrations postgres $(DATABASE_URL) up
+    cmd: go tool goose -dir ./migrations postgres $DATABASE_URL up
 
   migrate-down:
-    cmd: go tool goose -dir ./migrations postgres $(DATABASE_URL) down
+    cmd: go tool goose -dir ./migrations postgres $DATABASE_URL down
 
   migrate-add:
     cmd: ./scripts/migrate-add.sh

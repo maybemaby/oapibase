@@ -14,6 +14,7 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/maybemaby/oapibase/api/auth"
 	"github.com/maybemaby/oapibase/api/utils"
 	"github.com/maybemaby/oapibase/frontend"
 	"github.com/maybemaby/smolauth"
@@ -27,6 +28,7 @@ type Server struct {
 	pool        *pgxpool.Pool
 	services    *services
 	authManager *smolauth.AuthManager
+	jwtManager  *auth.JwtManager
 	prod        bool
 }
 
@@ -67,6 +69,15 @@ func NewServer(isProd bool) (*Server, error) {
 
 	server.authManager = authManager
 
+	jwtManager := &auth.JwtManager{
+		AccessTokenSecret:    []byte("access_token_secret"),
+		RefreshTokenSecret:   []byte("refresh_token_secret"),
+		AccessTokenLifetime:  time.Minute * 15,
+		RefreshTokenLifetime: time.Hour * 24 * 30,
+	}
+
+	server.jwtManager = jwtManager
+
 	services := newServices(pool, server.logger, authManager)
 	server.services = services
 
@@ -77,18 +88,11 @@ func (s *Server) MountRoutes() {
 
 	authHandler := &AuthHandler{
 		authManager: s.authManager,
+		jwtManager:  s.jwtManager,
+		pool:        s.pool,
 	}
 
 	mux := http.NewServeMux()
-
-	if !s.prod {
-		mux.HandleFunc("GET /docs/swagger.json", HandleSpec)
-		mux.HandleFunc("GET /docs/swagger", func(w http.ResponseWriter, r *http.Request) {
-			utils.RenderSwaggerUI(w, "/docs/swagger.json")
-		})
-
-		s.logger.Info("Swagger UI available at /docs/swagger")
-	}
 
 	authLoadMw := smolauth.AuthLoadMiddleware(s.authManager)
 
@@ -96,11 +100,20 @@ func (s *Server) MountRoutes() {
 		CorsOrigin: "http://localhost:3001",
 	}))
 
-	authMw := rootMw.Append(smolauth.RequireAuthMiddleware(s.authManager))
+	authMw := rootMw.Append(auth.RequireAccessToken(s.jwtManager))
+
+	if !s.prod {
+		mux.Handle("GET /docs/swagger.json", rootMw.ThenFunc(HandleSpec))
+		mux.HandleFunc("GET /docs/swagger", func(w http.ResponseWriter, r *http.Request) {
+			utils.RenderSwaggerUI(w, "/docs/swagger.json")
+		})
+
+		s.logger.Info("Swagger UI available at /docs/swagger")
+	}
 
 	mux.Handle("GET /auth/me/{$}", authMw.ThenFunc(authHandler.GetAuthMe))
-	mux.Handle("POST /auth/signup", rootMw.ThenFunc(authHandler.PostAuthSignup))
-	mux.Handle("POST /auth/login", rootMw.ThenFunc(authHandler.PostAuthLogin))
+	mux.Handle("POST /auth/signup/{$}", rootMw.ThenFunc(authHandler.SignupJWT))
+	mux.Handle("POST /auth/login/{$}", rootMw.ThenFunc(authHandler.LoginJWT))
 
 	// Due to the way the generated code is structured, we need to handle OPTIONS requests explicitly
 	mux.Handle("OPTIONS /", rootMw.ThenFunc(func(w http.ResponseWriter, r *http.Request) {

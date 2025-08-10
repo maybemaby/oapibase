@@ -12,16 +12,17 @@ func SpecRouter() spec.Generator {
 	r := spec.NewRouter(
 		option.WithTitle("oapibase"),
 		option.WithVersion("0.1.0"),
+		option.WithSecurity("bearerAuth", option.SecurityHTTPBearer("Bearer")),
 	)
 
 	r.Post("/auth/login",
 		option.Request(new(PassLoginBody)),
-		option.Response(200, "Success"),
+		option.Response(200, new(LoginJwtResponse)),
 		option.Tags("auth"),
 	)
 
 	r.Post("/auth/signup", option.Request(new(PassSignupBody)),
-		option.Response(200, "Success"),
+		option.Response(200, new(LoginJwtResponse)),
 		option.Tags("auth"),
 	)
 

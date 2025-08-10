@@ -1,14 +1,25 @@
 @host=localhost:8000
 
-GET http://{{host}}/themes/next
-
-###
-POST http://{{host}}/themes/next
+# @name login
+POST http://{{host}}/auth/login
 Content-Type: application/json
 
 {
-  "name": "next"
+  "email": "email@site.com",
+  "password": "stringst"
 }
 
 ###
-GET http://{{host}}/docs/swagger.json
+GET http://{{host}}/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+
+###
+GET http://{{host}}/auth/signup
+Content-Type: application/json
+
+{
+  "email": "email@site.com",
+  "password": "stringst",
+  "password2": "stringst"
+}

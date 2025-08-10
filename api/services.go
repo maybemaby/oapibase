@@ -7,9 +7,6 @@ import (
 	"github.com/maybemaby/smolauth"
 )
 
-type features struct {
-}
-
 type services struct {
 }
 
