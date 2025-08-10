@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/alexedwards/scs/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/maybemaby/oapibase/api/auth"
@@ -52,23 +51,6 @@ func NewServer(isProd bool) (*Server, error) {
 	server.db = db
 	server.pool = pool
 
-	authManager := smolauth.NewAuthManager(smolauth.AuthOpts{
-		SessionDuration: time.Hour * 24 * 30,
-		Cookie: scs.SessionCookie{
-			Name:     "__s_auth_sess",
-			HttpOnly: true,
-			Persist:  true,
-			SameSite: http.SameSiteLaxMode,
-			Secure:   isProd,
-			Path:     "/",
-		},
-	})
-
-	authManager.WithLogger(server.logger)
-	authManager.WithPostgres(pool)
-
-	server.authManager = authManager
-
 	jwtManager := &auth.JwtManager{
 		AccessTokenSecret:    []byte("access_token_secret"),
 		RefreshTokenSecret:   []byte("refresh_token_secret"),
@@ -78,7 +60,7 @@ func NewServer(isProd bool) (*Server, error) {
 
 	server.jwtManager = jwtManager
 
-	services := newServices(pool, server.logger, authManager)
+	services := newServices(pool, server.logger, jwtManager)
 	server.services = services
 
 	return server, nil
@@ -94,11 +76,9 @@ func (s *Server) MountRoutes() {
 
 	mux := http.NewServeMux()
 
-	authLoadMw := smolauth.AuthLoadMiddleware(s.authManager)
-
-	rootMw := authLoadMw.Extend(RootMiddleware(s.logger, MiddlewareConfig{
+	rootMw := RootMiddleware(s.logger, MiddlewareConfig{
 		CorsOrigin: "http://localhost:3001",
-	}))
+	})
 
 	authMw := rootMw.Append(auth.RequireAccessToken(s.jwtManager))
 
