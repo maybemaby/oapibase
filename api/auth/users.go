@@ -65,3 +65,4 @@ func CreateUser(ctx context.Context, email, password string, db *pgxpool.Pool) (
 		Role:         "user",
 	}, nil
 }
+

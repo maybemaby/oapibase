@@ -52,8 +52,8 @@ func NewServer(isProd bool) (*Server, error) {
 	server.pool = pool
 
 	jwtManager := &auth.JwtManager{
-		AccessTokenSecret:    []byte("access_token_secret"),
-		RefreshTokenSecret:   []byte("refresh_token_secret"),
+		AccessTokenSecret:    []byte(os.Getenv("ACCESS_TOKEN_SECRET")),
+		RefreshTokenSecret:   []byte(os.Getenv("REFRESH_TOKEN_SECRET")),
 		AccessTokenLifetime:  time.Minute * 15,
 		RefreshTokenLifetime: time.Hour * 24 * 30,
 	}
@@ -74,6 +74,8 @@ func (s *Server) MountRoutes() {
 		pool:        s.pool,
 	}
 
+	googleHandler := NewGoogleHandler(s.pool, s.jwtManager)
+
 	mux := http.NewServeMux()
 
 	rootMw := RootMiddleware(s.logger, MiddlewareConfig{
@@ -91,9 +93,11 @@ func (s *Server) MountRoutes() {
 		s.logger.Info("Swagger UI available at /docs/swagger")
 	}
 
-	mux.Handle("GET /auth/me/{$}", authMw.ThenFunc(authHandler.GetAuthMe))
-	mux.Handle("POST /auth/signup/{$}", rootMw.ThenFunc(authHandler.SignupJWT))
-	mux.Handle("POST /auth/login/{$}", rootMw.ThenFunc(authHandler.LoginJWT))
+	mux.Handle("GET /auth/me", authMw.ThenFunc(authHandler.GetAuthMe))
+	mux.Handle("POST /auth/signup", rootMw.ThenFunc(authHandler.SignupJWT))
+	mux.Handle("POST /auth/login", rootMw.ThenFunc(authHandler.LoginJWT))
+	mux.Handle("GET /auth/google", rootMw.ThenFunc(googleHandler.HandleAuth))
+	mux.Handle("GET /auth/google/callback", rootMw.ThenFunc(googleHandler.HandleCallback))
 
 	// Due to the way the generated code is structured, we need to handle OPTIONS requests explicitly
 	mux.Handle("OPTIONS /", rootMw.ThenFunc(func(w http.ResponseWriter, r *http.Request) {

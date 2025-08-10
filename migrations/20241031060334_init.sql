@@ -16,7 +16,8 @@ CREATE TABLE accounts (
     provider_id TEXT NOT NULL,
     access_token TEXT NOT NULL,
     refresh_token TEXT,
-    access_token_expires_at TIMESTAMPTZ NOT NULL
+    access_token_expires_at TIMESTAMPTZ NOT NULL,
+    refresh_token_expires_at TIMESTAMPTZ
 );
 
 CREATE UNIQUE INDEX accounts_provider_provider_id_idx ON accounts (provider, provider_id);
