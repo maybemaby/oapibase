@@ -54,32 +54,25 @@ func (s *Server) MountRoutesOapi() {
 		})
 	}
 
-	authRoute := r.Group("/auth")
+	authRoute := r.Group("/auth").With(option.GroupTags("auth"))
 
 	authRoute.Handle("GET /me", authMw.ThenFunc(authHandler.GetAuthMe)).With(
 		option.Response(200, new(MeResponse)),
 		option.Response(401, "Unauthorized"),
-		option.Tags("auth"),
 	)
 
 	authRoute.Handle("POST /signup", rootMw.ThenFunc(authHandler.SignupJWT)).With(
 		option.Request(new(PassSignupBody)),
 		option.Response(200, new(LoginJwtResponse)),
-		option.Tags("auth"),
 	)
 
 	authRoute.Handle("POST /login", rootMw.ThenFunc(authHandler.LoginJWT)).With(
 		option.Request(new(PassLoginBody)),
 		option.Response(200, new(LoginJwtResponse)),
-		option.Tags("auth"),
 	)
 
-	authRoute.Handle("GET /google", rootMw.ThenFunc(googleHandler.HandleAuth)).With(
-		option.Tags("auth"),
-	)
-	authRoute.Handle("GET /google/callback", rootMw.ThenFunc(googleHandler.HandleCallback)).With(
-		option.Tags("auth"),
-	)
+	authRoute.Handle("GET /google", rootMw.ThenFunc(googleHandler.HandleAuth))
+	authRoute.Handle("GET /google/callback", rootMw.ThenFunc(googleHandler.HandleCallback))
 
 	srv := &http.Server{
 		Addr:    ":" + s.port,

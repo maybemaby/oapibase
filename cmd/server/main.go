@@ -45,7 +45,9 @@ func loadEnv() {
 func main() {
 	args := argParse()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// OS Signals
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	defer stop()
 
 	loadEnv()
 
@@ -63,10 +65,6 @@ func main() {
 
 	server.WithPort(args.Port)
 
-	// OS Signals
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-
 	go func() {
 		err := server.Start(ctx)
 
@@ -75,8 +73,7 @@ func main() {
 		}
 	}()
 
-	<-osSignals
-
-	cancel()
+	<-ctx.Done()
+	stop()
 
 }

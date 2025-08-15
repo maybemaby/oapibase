@@ -20,10 +20,11 @@ import (
 )
 
 type Server struct {
-	logger      *slog.Logger
-	port        string
-	srv         *http.Server
-	db          *sql.DB
+	logger *slog.Logger
+	port   string
+	srv    *http.Server
+	db     *sql.DB
+	// dbx *sqlx.DB
 	pool        *pgxpool.Pool
 	services    *services
 	authManager *smolauth.AuthManager
