@@ -46,7 +46,8 @@ require (
 	github.com/microsoft/go-mssqldb v1.8.0 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
-	github.com/oaswrap/spec v0.3.1 // indirect
+	github.com/oaswrap/spec v0.3.3 // indirect
+	github.com/oaswrap/spec-ui v0.1.4 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -101,6 +102,7 @@ require (
 	github.com/lmittmann/tint v1.0.5
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
+	github.com/oaswrap/spec/adapter/httpopenapi v0.3.3
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/samber/lo v1.47.0 // indirect
 	github.com/samber/slog-multi v1.2.4

@@ -85,7 +85,6 @@ func (s *Server) MountRoutes() {
 	authMw := rootMw.Append(auth.RequireAccessToken(s.jwtManager))
 
 	if !s.prod {
-		mux.Handle("GET /docs/swagger.json", rootMw.ThenFunc(HandleSpec))
 		mux.HandleFunc("GET /docs/swagger", func(w http.ResponseWriter, r *http.Request) {
 			utils.RenderSwaggerUI(w, "/docs/swagger.json")
 		})
@@ -150,7 +149,7 @@ func (s *Server) MountRoutes() {
 
 func (s *Server) Start(ctx context.Context) error {
 
-	s.MountRoutes()
+	s.MountRoutesOapi()
 
 	s.logger.Info("Server started on port " + s.port)
 	s.logger.Info(fmt.Sprintf("Server is running in production mode: %t", s.prod))
