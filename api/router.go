@@ -36,8 +36,23 @@ func (s *Server) MountRoutesOapi() {
 				"persistAuthorization": "true",
 			},
 		}),
+		option.WithExternalDocs("/docs/openapi.json"),
 		option.WithDisableDocs(s.prod),
 	)
+
+	if !s.prod {
+		r.HandleFunc("/docs/openapi.json", func(w http.ResponseWriter, req *http.Request) {
+			spec, err := r.MarshalJSON()
+
+			if err != nil {
+				http.Error(w, "Error generating OpenAPI spec", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(spec)
+		})
+	}
 
 	authRoute := r.Group("/auth")
 
