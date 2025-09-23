@@ -115,14 +115,20 @@ func (h *AuthHandler) LoginJWT(w http.ResponseWriter, r *http.Request) {
 	user, err := auth.GetUserByEmail(r.Context(), data.Email, h.pool)
 
 	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		utils.ErrorJSON(w, AuthErrorResponse{
+			Message: "Invalid email or password",
+			Status:  401,
+		}, 401)
 		return
 	}
 
 	err = auth.CheckPasswordHash(data.Password, *user.PasswordHash)
 
 	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		utils.ErrorJSON(w, AuthErrorResponse{
+			Message: "Invalid email or password",
+			Status:  401,
+		}, 401)
 		return
 	}
 

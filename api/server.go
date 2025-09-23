@@ -152,7 +152,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 	s.MountRoutesOapi()
 
-	s.logger.Info("Server started on port " + s.port)
+	s.logger.Info("Server started at http://localhost:" + s.port)
 	s.logger.Info(fmt.Sprintf("Server is running in production mode: %t", s.prod))
 	s.logger.Debug("Server is running in debug mode")
 

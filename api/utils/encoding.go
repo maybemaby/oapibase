@@ -25,6 +25,11 @@ func WriteJSON[T any](w http.ResponseWriter, r *http.Request, data T) error {
 	return nil
 }
 
+func ErrorJSON[T any](w http.ResponseWriter, error T, code int) {
+	w.WriteHeader(code)
+	_ = WriteJSON(w, nil, error)
+}
+
 // CacheControlOpts represents Cache-Control response directives
 type CacheControlOpts struct {
 	Public          bool

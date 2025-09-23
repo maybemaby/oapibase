@@ -41,6 +41,9 @@ func (s *Server) MountRoutesOapi() {
 	)
 
 	if !s.prod {
+
+		s.logger.Info("Swagger docs enabled at /docs")
+
 		r.HandleFunc("/docs/openapi.json", func(w http.ResponseWriter, req *http.Request) {
 			spec, err := r.MarshalJSON()
 
@@ -63,12 +66,17 @@ func (s *Server) MountRoutesOapi() {
 
 	authRoute.Handle("POST /signup", rootMw.ThenFunc(authHandler.SignupJWT)).With(
 		option.Request(new(PassSignupBody)),
-		option.Response(200, new(LoginJwtResponse)),
+		ResponsesWithDefault(map[int]any{
+			200: new(LoginJwtResponse),
+		}),
 	)
 
 	authRoute.Handle("POST /login", rootMw.ThenFunc(authHandler.LoginJWT)).With(
 		option.Request(new(PassLoginBody)),
-		option.Response(200, new(LoginJwtResponse)),
+		Responses(map[int]any{
+			401: new(AuthErrorResponse),
+			200: new(LoginJwtResponse),
+		}),
 	)
 
 	authRoute.Handle("GET /google", rootMw.ThenFunc(googleHandler.HandleAuth))
