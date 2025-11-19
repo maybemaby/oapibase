@@ -1,7 +1,9 @@
 package api
 
 import (
+	"io/fs"
 	"net/http"
+	"os"
 
 	"github.com/maybemaby/oapibase/api/auth"
 	"github.com/oaswrap/spec-ui/config"
@@ -88,4 +90,39 @@ func (s *Server) MountRoutesOapi() {
 	}
 
 	s.srv = srv
+}
+
+func MountSpa(mux *http.ServeMux, pattern string, filesys fs.FS) {
+	fileServer := http.FileServer(http.FS(filesys))
+
+	mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// Try to open the requested file
+		file, err := filesys.Open(path)
+		if err == nil {
+			// File exists, close it and let the file server handle it
+			file.Close()
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// File doesn't exist, check if it's a not found error
+		if os.IsNotExist(err) {
+			// Serve index.html as fallback for SPA routing
+			indexData, err := fs.ReadFile(filesys, "index.html")
+			if err != nil {
+				http.Error(w, "Index file not found", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			w.Write(indexData)
+			return
+		}
+
+		// Other error occurred
+		http.Error(w, "Error accessing file", http.StatusInternalServerError)
+	})
 }
