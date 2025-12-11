@@ -10,13 +10,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/maybemaby/oapibase/api/auth"
 	"github.com/maybemaby/oapibase/api/utils"
-	"github.com/maybemaby/smolauth"
 )
 
 type AuthHandler struct {
-	authManager *smolauth.AuthManager
-	jwtManager  *auth.JwtManager
-	pool        *pgxpool.Pool
+	jwtManager *auth.JwtManager
+	pool       *pgxpool.Pool
 }
 
 type PassLoginBody struct {

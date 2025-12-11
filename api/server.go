@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/maybemaby/oapibase/api/auth"
-	"github.com/maybemaby/smolauth"
 )
 
 type Server struct {
@@ -21,11 +20,10 @@ type Server struct {
 	srv    *http.Server
 	db     *sql.DB
 	// dbx *sqlx.DB
-	pool        *pgxpool.Pool
-	services    *services
-	authManager *smolauth.AuthManager
-	jwtManager  *auth.JwtManager
-	prod        bool
+	pool       *pgxpool.Pool
+	services   *services
+	jwtManager *auth.JwtManager
+	prod       bool
 }
 
 func NewServer(isProd bool) (*Server, error) {
