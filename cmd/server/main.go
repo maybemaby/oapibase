@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -50,6 +51,20 @@ func main() {
 	defer stop()
 
 	loadEnv()
+
+	// Otel
+	otelShutdown, err := api.SetupOtel(ctx, api.OtelConfig{
+		TraceExporter:   api.OtlpGrpcExporter,
+		MetricsExporter: api.OtlpGrpcExporter,
+	})
+
+	if err != nil {
+		log.Fatalf("Error setting up otel: %v", err)
+	}
+
+	defer func() {
+		err = errors.Join(err, otelShutdown(context.Background()))
+	}()
 
 	// Server
 	appEnv := os.Getenv("APP_ENV")

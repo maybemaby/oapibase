@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -9,16 +10,20 @@ import (
 	"github.com/oaswrap/spec-ui/config"
 	"github.com/oaswrap/spec/adapter/httpopenapi"
 	"github.com/oaswrap/spec/option"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
+
+func httpSpanName(operation string, r *http.Request) string {
+	return fmt.Sprintf("HTTP %s %s", r.Method, r.URL.Path)
+}
 
 func (s *Server) MountRoutesOapi() {
 
 	mux := http.NewServeMux()
 
 	authHandler := &AuthHandler{
-		authManager: s.authManager,
-		jwtManager:  s.jwtManager,
-		pool:        s.pool,
+		jwtManager: s.jwtManager,
+		pool:       s.pool,
 	}
 
 	googleHandler := NewGoogleHandler(s.pool, s.jwtManager)
@@ -86,7 +91,7 @@ func (s *Server) MountRoutesOapi() {
 
 	srv := &http.Server{
 		Addr:    ":" + s.port,
-		Handler: mux,
+		Handler: otelhttp.NewHandler(mux, "server", otelhttp.WithSpanNameFormatter(httpSpanName)),
 	}
 
 	s.srv = srv

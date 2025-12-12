@@ -23,7 +23,7 @@ tasks:
     cmd: go test -v ./...
 
   db-up:
-    cmd: docker run --name laserpg -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=laserpg -p 5432:5432 -d postgres
+    cmd: docker run --name oapipg -v ./pg-data:/var/lib/postgresql -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=oapipg -p 5432:5432 -d postgres
 
   migrate-up:
     cmd: go tool goose -dir ./migrations postgres $DATABASE_URL up
@@ -33,6 +33,3 @@ tasks:
 
   migrate-add:
     cmd: ./scripts/migrate-add.sh
-
-  generate:
-    cmd: go run cmd/apispec/main.go
