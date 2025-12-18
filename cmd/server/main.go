@@ -56,6 +56,9 @@ func main() {
 	otelShutdown, err := api.SetupOtel(ctx, api.OtelConfig{
 		TraceExporter:   api.OtlpGrpcExporter,
 		MetricsExporter: api.OtlpGrpcExporter,
+		TraceEnabled:    true,
+		MetricsEnabled:  true,
+		LoggerEnabled:   false,
 	})
 
 	if err != nil {

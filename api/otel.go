@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -28,7 +27,10 @@ const (
 
 type OtelConfig struct {
 	TraceExporter   ExporterType
+	TraceEnabled    bool
 	MetricsExporter ExporterType
+	MetricsEnabled  bool
+	LoggerEnabled   bool
 }
 
 func SetupOtel(ctx context.Context, cfg OtelConfig) (func(context.Context) error, error) {
@@ -67,31 +69,35 @@ func SetupOtel(ctx context.Context, cfg OtelConfig) (func(context.Context) error
 	otel.SetTextMapPropagator(prop)
 
 	// Set up trace provider.
-	tracerProvider, err := newTracerProvider(ctx, traceExporter)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
+	if cfg.TraceEnabled {
+		tracerProvider, err := newTracerProvider(ctx, traceExporter)
+		if err != nil {
+			handleErr(err)
+			return shutdown, err
+		}
+		shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
+		otel.SetTracerProvider(tracerProvider)
 	}
-	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
-	otel.SetTracerProvider(tracerProvider)
 
 	// Set up meter provider.
-	meterProvider, err := newMeterProvider(ctx, metricsExporter)
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
+	if cfg.MetricsEnabled {
+		meterProvider, err := newMeterProvider(ctx, metricsExporter)
+		if err != nil {
+			handleErr(err)
+			return shutdown, err
+		}
+		shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+		otel.SetMeterProvider(meterProvider)
 	}
-	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
-	otel.SetMeterProvider(meterProvider)
 
 	// Set up logger provider.
-	loggerProvider, err := newLoggerProvider()
-	if err != nil {
-		handleErr(err)
-		return shutdown, err
-	}
-	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
-	global.SetLoggerProvider(loggerProvider)
+	// loggerProvider, err := newLoggerProvider()
+	// if err != nil {
+	// 	handleErr(err)
+	// 	return shutdown, err
+	// }
+	// shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
+	// global.SetLoggerProvider(loggerProvider)
 
 	return shutdown, err
 }
@@ -115,7 +121,8 @@ func newTracerProvider(ctx context.Context, exporter ExporterType) (*trace.Trace
 		tracerExporter = grpcExporter
 	} else {
 		stdoutExporter, err := stdouttrace.New(
-			stdouttrace.WithPrettyPrint())
+			stdouttrace.WithPrettyPrint(),
+		)
 		if err != nil {
 			return nil, err
 		}
