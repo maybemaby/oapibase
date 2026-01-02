@@ -88,6 +88,15 @@ func (s *Server) MountRoutesOapi() {
 
 	authRoute.Handle("GET /google", rootMw.ThenFunc(googleHandler.HandleAuth))
 	authRoute.Handle("GET /google/callback", rootMw.ThenFunc(googleHandler.HandleCallback))
+	
+	mux.Handle("/", rootMw.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		http.NotFound(w,r)
+	}))
 
 	srv := &http.Server{
 		Addr:    ":" + s.port,
