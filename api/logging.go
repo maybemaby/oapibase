@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"time"
@@ -46,28 +45,4 @@ func BootstrapLogger(level slog.Level, format LoggingFormat, colorize bool) *slo
 	logger := slog.New(handler)
 
 	return logger
-}
-
-var _ slog.Handler = (*NoOpHandler)(nil)
-
-type NoOpHandler struct{}
-
-// Enabled implements slog.Handler.
-func (n *NoOpHandler) Enabled(context.Context, slog.Level) bool {
-	return false
-}
-
-// Handle implements slog.Handler.
-func (n *NoOpHandler) Handle(context.Context, slog.Record) error {
-	return nil
-}
-
-// WithAttrs implements slog.Handler.
-func (n *NoOpHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return n
-}
-
-// WithGroup implements slog.Handler.
-func (n *NoOpHandler) WithGroup(name string) slog.Handler {
-	return n
 }
