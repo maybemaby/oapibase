@@ -23,11 +23,11 @@ type WithLoggerService interface {
 func BootstrapLogger(level slog.Level, format LoggingFormat, colorize bool) *slog.Logger {
 	handlers := []slog.Handler{}
 
-	if format == "json" {
+	if format == JSONFormat {
 		handlers = append(handlers, slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 			Level: level,
 		}))
-	} else if format == "text" {
+	} else if format == TEXTFormat {
 		if colorize {
 			handlers = append(handlers, tint.NewHandler(os.Stderr, &tint.Options{
 				Level:      level,
