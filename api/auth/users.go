@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -42,12 +43,18 @@ func GetUserByEmail(ctx context.Context, email string, db *pgxpool.Pool) (User, 
 }
 
 func CreateUser(ctx context.Context, email, password string, db *pgxpool.Pool) (User, error) {
+	tracer := otel.Tracer("auth")
+	spanCtx, span := tracer.Start(ctx, "CreateUser")
+	defer span.End()
+
 	hashedPassword, err := HashPassword(password)
 	if err != nil {
 		return User{}, err
 	}
 
-	row := db.QueryRow(ctx, "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, created_at", email, hashedPassword)
+	querySpanCtx, querySpan := tracer.Start(spanCtx, "InsertUserQuery")
+	row := db.QueryRow(querySpanCtx, "INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, created_at", email, hashedPassword)
+	querySpan.End()
 
 	var id int
 	var createdAt time.Time
@@ -65,4 +72,3 @@ func CreateUser(ctx context.Context, email, password string, db *pgxpool.Pool) (
 		Role:         "user",
 	}, nil
 }
-

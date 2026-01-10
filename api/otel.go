@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -47,6 +48,12 @@ func SetupOtel(ctx context.Context, cfg OtelConfig) (func(context.Context) error
 		metricsExporter = StdoutExporter
 	}
 
+	otelResource, err := resource.New(ctx, resource.WithOS(), resource.WithFromEnv(), resource.WithHost(), resource.WithProcess())
+
+	if err != nil {
+		return nil, err
+	}
+
 	// shutdown calls cleanup functions registered via shutdownFuncs.
 	// The errors from the calls are joined.
 	// Each registered cleanup will be invoked once.
@@ -70,7 +77,7 @@ func SetupOtel(ctx context.Context, cfg OtelConfig) (func(context.Context) error
 
 	// Set up trace provider.
 	if cfg.TraceEnabled {
-		tracerProvider, err := newTracerProvider(ctx, traceExporter)
+		tracerProvider, err := newTracerProvider(ctx, traceExporter, trace.WithResource(otelResource))
 		if err != nil {
 			handleErr(err)
 			return shutdown, err
@@ -81,7 +88,7 @@ func SetupOtel(ctx context.Context, cfg OtelConfig) (func(context.Context) error
 
 	// Set up meter provider.
 	if cfg.MetricsEnabled {
-		meterProvider, err := newMeterProvider(ctx, metricsExporter)
+		meterProvider, err := newMeterProvider(ctx, metricsExporter, metric.WithResource(otelResource))
 		if err != nil {
 			handleErr(err)
 			return shutdown, err
@@ -109,7 +116,7 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
-func newTracerProvider(ctx context.Context, exporter ExporterType) (*trace.TracerProvider, error) {
+func newTracerProvider(ctx context.Context, exporter ExporterType, opts ...trace.TracerProviderOption) (*trace.TracerProvider, error) {
 	var tracerExporter trace.SpanExporter
 
 	if exporter == OtlpGrpcExporter {
@@ -130,14 +137,20 @@ func newTracerProvider(ctx context.Context, exporter ExporterType) (*trace.Trace
 		tracerExporter = stdoutExporter
 	}
 
+	options := []trace.TracerProviderOption{
+		trace.WithBatcher(tracerExporter, trace.WithBatchTimeout(time.Second*5)),
+	}
+
+	options = append(options, opts...)
+
 	tracerProvider := trace.NewTracerProvider(
-		trace.WithBatcher(tracerExporter,
-			trace.WithBatchTimeout(time.Second*5)),
+		options...,
 	)
+
 	return tracerProvider, nil
 }
 
-func newMeterProvider(ctx context.Context, exporter ExporterType) (*metric.MeterProvider, error) {
+func newMeterProvider(ctx context.Context, exporter ExporterType, opts ...metric.Option) (*metric.MeterProvider, error) {
 	var metricExporter metric.Exporter
 
 	if exporter == OtlpGrpcExporter {
@@ -155,8 +168,14 @@ func newMeterProvider(ctx context.Context, exporter ExporterType) (*metric.Meter
 		metricExporter = stdoutExporter
 	}
 
-	meterProvider := metric.NewMeterProvider(
+	options := []metric.Option{
 		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+	}
+
+	options = append(options, opts...)
+
+	meterProvider := metric.NewMeterProvider(
+		options...,
 	)
 	return meterProvider, nil
 }
