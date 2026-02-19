@@ -49,7 +49,7 @@ func NewGoogleHandler(db *pgxpool.Pool, jwtManager *auth.JwtManager) *GoogleHand
 type GoogleToken struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
-	Expiry       time.Time `json:"expiry,omitempty"`
+	Expiry       time.Time `json:"expiry"`
 	IDToken      string    `json:"id_token"`
 	ExpiresIn    *int      `json:"expires_in,omitempty"`
 	Scope        string    `json:"scope"`
@@ -241,21 +241,21 @@ func (h *GoogleHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{
+	response := map[string]any{
 		"message": "Login successful",
-		"user": map[string]interface{}{
+		"user": map[string]any{
 			"id":    newUser.ID,
 			"email": newUser.Email,
 			"role":  newUser.Role,
 		},
-		"token": map[string]interface{}{
+		"token": map[string]any{
 			"accessToken":  googleToken.AccessToken,
 			"refreshToken": googleToken.RefreshToken,
 			"expiresIn":    googleToken.ExpiresIn,
 			"expiry":       googleToken.Expiry,
 			"scope":        googleToken.Scope,
 		},
-		"jwt": map[string]interface{}{
+		"jwt": map[string]any{
 			"accessToken":  accessToken,
 			"refreshToken": refreshToken,
 		},

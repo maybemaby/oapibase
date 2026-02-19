@@ -48,7 +48,7 @@ func (m *JwtManager) EncodeAccessToken(data SessionData) (string, error) {
 }
 
 func (m *JwtManager) ValidateAccessToken(tokenString string) (*AccessTokenClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(token *jwt.Token) (any, error) {
 		return m.AccessTokenSecret, nil
 	}, jwt.WithLeeway(1*time.Minute))
 
@@ -122,7 +122,7 @@ func (m *JwtManager) EncodeRefreshToken(data SessionData) (string, error) {
 }
 
 func (m *JwtManager) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (any, error) {
 		return m.RefreshTokenSecret, nil
 	})
 
